@@ -1,133 +1,232 @@
 import React, {useState} from 'react';
+import axios from 'axios';
 
 const UserSelectionForm = () => {
-    const [age, setAge] = useState('');
-    const [inpatientLimit, setInpatientLimit] = useState('');
-    const [includeSpouse, setIncludeSpouse] = useState(false);
-    const [spouseAge, setSpouseAge] = useState('');
-    const [includeChildren, setIncludeChildren] = useState(false);
-    const [numberOfChildren, setNumberOfChildren] = useState('');
-    const [additionalCovers, setAdditionalCovers] = useState({
-        maternity: false,
-        dental: false,
-        optical: false,
+    const [formData, setFormData] = useState({
+        age: '',
+        inpatientLimit: '',
+        includeSpouse: false,
+        spouseAge: '',
+        includeChildren: false,
+        numberOfChildren: '',
+        additionalCovers: {
+            maternity: false,
+            dental: false,
+            optical: false,
+        },
     });
+    const [errorMessages, setErrorMessages] = useState({});
 
-    // New state variables for validation messages
-    const [ageValidationMessage, setAgeValidationMessage] = useState('');
-    const[spouseAgeValidationMessage, setSpouseAgeValidationMessage] = useState('');
-    const[childrenValidationMessage, setChildrenValidationMessage] = useState('');
 
-    const validateAge = (age) => age >= 18 && age <= 79;
+    // Helper to handle changes in form inputs
+    const handleChange = (e) => {
+        const {name, value, type, checked} = e.target;
+        // Handling checkboxes separately
+        if (type === 'checkbox') {
+            if (name === 'includeSpouse' || name === 'includeChildren') {
+                setFormData({...formData, [name]: checked});
+            } else {
+                setFormData({
+                    ...formData,
+                    additionalCovers: {...formData.additionalCovers, [name]:checked},
+                });
+            }
+        } else {
+            setFormData({...formData, [name]: value});
+        }
+    };
+
+
+    // Helper for validating the form data
+    const validateForm = () => {
+        let isValid = true;
+        let errors = {};
+
+        // Validate principal's age
+        if (!formData.age || formData.age < 18 || formData.age > 79) {
+            errors.age = 'Age must be between 18 and 79.';
+            isValid = false;
+        }
+
+        // Validate inpatient limit is selected
+        if (!formData.inpatientLimit) {
+            errors.inpatientLimit = 'Selecting an inpatient care limit is required.';
+            isValid = false;
+        }
+
+        // Conditional validations
+        if (formData.includeSpouse) {
+            // Validate spouse's age if spouse is included
+            if (!formData.spouseAge || formData.spouseAge < 18 || formData.spouseAge > 79) {
+                errors.spouseAge = 'Spouse age must be between 18 and 79.'
+                isValid = false;
+            }
+        }
+
+        if (formData.numberOfChildren) {
+            // Validate number of children
+            if (!formData.numberOfChildren || formData.numberOfChildren < 1 || formData.numberOfChildren > 5) {
+                errors.numberOfChildren = 'Number of children must be between 1 and 5.';
+                isValid = false;
+            }
+        }
+
+        setErrorMessages(errors);
+        return isValid;
+    };
+
 
 
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Reset validation messages
-        setAgeValidationMessage('');
-        setSpouseAgeValidationMessage('');
-        setChildrenValidationMessage('');
-
-        // Validate principal's age
-        if (!validateAge(Number(age))) {
-            setAgeValidationMessage('Age must be between 18 and 79.');
-            return; // Prevent form submission
+        if (!validateForm()) {
+            console.error("Validation failed", errorMessages);
+            return; // Stop form submission if validation fails
         }
 
-        // Validate spouse's age if spouse is included
-        if (includeSpouse && !validateAge(Number(spouseAge))) {
-            setSpouseAgeValidationMessage('Spouse age must be between 18 and 79.');
-            return; // Prevent form submission
-        }
+        // Constructing query parameters
+        const params = new URLSearchParams({
+            ...formData,
+            includeSpouse: undefined, // exclude this as it's not directly used in the query
+            includeChildren: undefined, // also exclude for same reason
+            // Convert additionalCovers to individual entries
+            maternity: formData.additionalCovers.maternity ? 'true' : 'false',
+            dental: formData.additionalCovers.dental ? 'true' : 'false',
+            optical: formData.additionalCovers.optical ? 'true' : 'false',
+            // Handle converting boolean values as needed by your API, for instance:
+            // 'true' if included, exclude or 'false' otherwise
+        }).toString();
 
-        // Additional validation for principals 65 or order with a spouse under 65
-        if (includeSpouse && Number(age) >= 65 && Number(spouseAge) < 65) {
-            setSpouseAgeValidationMessage('Since your partner is over 65 and you are under 65, you must get a separate cover.');
-            return; // Prevent form submission
-        }
 
-        // Validate number of children
-        if (includeChildren && (Number(numberOfChildren) < 1 || Number(numberOfChildren) > 5)) {
-            setChildrenValidationMessage('Number of children must be between 1 and 5.');
-            return; // Prevent form submission
-        }
-
-        // Log the form data for debugging purposes
-        console.log({
-            age,
-            inpatientLimit,
-            includeSpouse,
-            spouseAge: includeSpouse ? spouseAge : undefined,
-            includeChildren,
-            numberOfChildren: includeChildren ? numberOfChildren : undefined,
-            additionalCovers,
-        });
-        // TODO: Proceed with API call or further processing after validation passes
+        axios.get(`http://localhost:3001/api/plans?${params}`)
+            .then(response => {
+                console.log("Filtered plans:", response.data);
+                // Handle displaying the filtered plans here
+            }).catch(error => {
+                console.log("Error fetching filtered plans:", error.response?.data || error.message);
+                // Handle displaying an error message here
+            })
     };
+
+    
+    // Render function for form
 
     return (
         <form onSubmit={handleSubmit}>
-            {/* Principal's age input and validation message */}
+            {/* Dynamically generate form fields based on state */}
+            {/* Principal's Age */}
             <div>
                 <label>Age of Principal:</label>
-                <input type="number" value={age} onChange={e => setAge(e.target.value)} />
-                {ageValidationMessage && <div>{ageValidationMessage}</div>}
+                <input
+                    type='number'
+                    name='age'
+                    value={formData.age}
+                    onChange={handleChange}
+                />
+                {errorMessages.age && <div>{errorMessages.age}</div>}
             </div>
-            {/* Inpatient care limit dropdown */}
+
+            {/* Inpatient Care Limit */}
             <div>
                 <label>Inpatient Care Limit:</label>
-                <select value={inpatientLimit} onChange={e => setInpatientLimit(e.target.value)}>
+                <select name='inpatientLimit' value={formData.inpatientLimit} onChange={handleChange}>
                     <option value="">Select Inpatient Care Limit</option>
                     <option value="100000">Kshs 100,000</option>
                     <option value="250000">Kshs 250,000</option>
                     <option value="500000">Kshs 500,000</option>
+                    <option value="750000">Kshs 750,000</option>
                     <option value="1000000">Kshs 1,000,000</option>
+                    <option value="1500000">Kshs 1,500,000</option>
                     <option value="2000000">Kshs 2,000,000</option>
-                    <option value="3000000">Kshs 3,000,0000</option>
+                    <option value="3000000">Kshs 3,000,000</option>
                     <option value="5000000">Kshs 5,000,000</option>
                     <option value="10000000">Kshs 10,000,000</option>
                 </select>
+                {errorMessages.inpatientLimit && <div>{errorMessages.inpatientLimit}</div>}
             </div>
+
+            {/* Include Spouse */}
             <div>
                 <label>Include Spouse:</label>
-                <input type="checkbox" checked={includeSpouse} onChange={() => setIncludeSpouse(!includeSpouse)} />
-                {/* Spouse's age input and validation message */}
-                {includeSpouse && (
-                    <div>
+                <input
+                    type='checkbox'
+                    name='includeSpouse'
+                    checked={formData.includeSpouse}
+                    onChange={handleChange}
+                />
+                {formData.includeSpouse && (
+                    <>
                         <label>Spouse Age:</label>
-                        <input type="number" value={spouseAge} onChange={e => setSpouseAge(e.target.value)} />
-                        {spouseAgeValidationMessage && <div>{spouseAgeValidationMessage}</div>}
-                    </div>
+                        <input
+                            type='number'
+                            name='spouseAge'
+                            value={formData.spouseAge}
+                            onChange={handleChange}
+                        />
+                        {errorMessages.spouseAge && <div>{errorMessages.spouseAge}</div>}
+                    </>
                 )}
             </div>
+
+            {/* Include Children */}
             <div>
                 <label>Include Under-18 Children:</label>
-                <input type="checkbox" checked={includeChildren} onChange={() => setIncludeChildren(!includeChildren)} />
-                {/* Number of children input and validation message */}
-                {includeChildren && (
-                    <div>
-                        <label>Number of Children:</label>
-                        <input type="number" value={numberOfChildren} onChange={e => setNumberOfChildren(e.target.value)} />
-                        {childrenValidationMessage && <div>{childrenValidationMessage}</div>}
-                    </div>
+                <input
+                    type='checkbox'
+                    name='includeChildren'
+                    checked={formData.includeChildren}
+                    onChange={handleChange}
+                />
+                {formData.includeChildren && (
+                    <>
+                        <label>Number of Children: </label>
+                        <input
+                            type='number'
+                            name='numberOfChildren'
+                            value={formData.numberOfChildren}
+                            onChange={handleChange}
+                        />
+                        {errorMessages.numberOfChildren && <div>{errorMessages.numberOfChildren}</div>}
+                    </>
                 )}
             </div>
+
+            {/* Additional Covers */}
             <div>
                 <label>Maternity Cover:</label>
-                <input type="checkbox" checked={additionalCovers.maternity} onChange={() => setAdditionalCovers({...additionalCovers, maternity: !additionalCovers.maternity})} />
+                <input
+                    type='checkbox'
+                    name='maternity'
+                    checked={formData.additionalCovers.maternity}
+                    onChange={handleChange}
+                />
             </div>
             <div>
                 <label>Dental Cover:</label>
-                <input type="checkbox" checked={additionalCovers.dental} onChange={() => setAdditionalCovers({...additionalCovers, dental: !additionalCovers.dental})} />
+                <input
+                    type='checkbox'
+                    name='dental'
+                    checked={formData.additionalCovers.dental}
+                    onChange={handleChange}
+                />
             </div>
             <div>
                 <label>Optical Cover:</label>
-                <input type="checkbox" checked={additionalCovers.optical} onChange={() => setAdditionalCovers({...additionalCovers, optical: !additionalCovers.optical})} />
+                <input
+                    type='checkbox'
+                    name='optical'
+                    checked={formData.additionalCovers.optical}
+                    onChange={handleChange}
+                />
             </div>
-            <button type="submit">Submit</button>
+
+
+            {/* Submit button */}
+            <button type='submit'>Submit</button>
         </form>
-    );
+    )
+
 };
 
 export default UserSelectionForm;

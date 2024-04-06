@@ -1,5 +1,5 @@
 import React from 'react';
-import UserSelectionForm from './UserSelectionForm'; // This being my form component
+import UserSelectionForm from '../components/UserSelectionForm'; // This being my form component
 
 const GetStartedPage = () => {
     return (

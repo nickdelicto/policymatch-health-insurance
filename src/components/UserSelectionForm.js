@@ -77,6 +77,26 @@ const UserSelectionForm = () => {
 
 
 
+    // Defining a reset function when form submitted successfully
+    const resetForm = () => {
+        setFormData({
+            age: '',
+            inpatientLimit: '',
+            includeSpouse: false,
+            spouseAge: '',
+            includeChildren: false,
+            numberOfChildren: '',
+            additionalCovers: {
+                maternity: false,
+                dental: false,
+                optical: false,
+            },
+        });
+        setErrorMessages({});
+    };
+
+
+
     const handleSubmit = (e) => {
         e.preventDefault();
 
@@ -103,10 +123,11 @@ const UserSelectionForm = () => {
             .then(response => {
                 console.log("Filtered plans:", response.data);
                 // Handle displaying the filtered plans here
+                resetForm(); // Reset form only after successful submission
             }).catch(error => {
                 console.log("Error fetching filtered plans:", error.response?.data || error.message);
                 // Handle displaying an error message here
-            })
+            });
     };
 
     

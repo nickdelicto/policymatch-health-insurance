@@ -61,7 +61,17 @@ const UserSelectionForm = () => {
                 errors.spouseAge = 'Spouse age must be between 18 and 79.'
                 isValid = false;
             }
+
+            // Additional validation for age compatibility between principal and spouse
+            if (formData.age > 65 && formData.spouseAge <= 65) {
+                errors.spouseAge = 'Because principal is above 65, spouse must also be above 65. Otherwise buy separate plans.'
+                isValid = false;
+            } else if (formData.age <= 65 && formData.spouseAge > 65) {
+                errors.spouseAge = 'Because principal is 65 or below, spouse must be 65 or below. Otherwise buy separate plans.'
+                isValid = false;
+            }
         }
+
 
         if (formData.numberOfChildren) {
             // Validate number of children

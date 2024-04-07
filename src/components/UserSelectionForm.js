@@ -107,7 +107,7 @@ const UserSelectionForm = () => {
 
 
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!validateForm()) {
@@ -116,28 +116,37 @@ const UserSelectionForm = () => {
         }
 
         // Constructing query parameters
-        const params = new URLSearchParams({
-            ...formData,
-            includeSpouse: undefined, // exclude this as it's not directly used in the query
-            includeChildren: undefined, // also exclude for same reason
-            // Convert additionalCovers to individual entries
-            maternity: formData.additionalCovers.maternity ? 'true' : 'false',
-            dental: formData.additionalCovers.dental ? 'true' : 'false',
-            optical: formData.additionalCovers.optical ? 'true' : 'false',
-            // Handle converting boolean values as needed by your API, for instance:
-            // 'true' if included, exclude or 'false' otherwise
-        }).toString();
+        let queryParams = {
+            age: formData.age,
+            inpatientLimit: formData.inpatientLimit,
+            // Convert additionalCovers to individual boolean query parameters
+            maternity: formData.additionalCovers.maternity,
+            dental: formData.additionalCovers.dental,
+            optical: formData.additionalCovers.optical,
+        };
 
+        // If spouse is included, add spouseAge to queryParams
+        if (formData.includeSpouse) {
+            queryParams.spouseAge = formData.spouseAge;
+        }
 
-        axios.get(`http://localhost:3001/api/plans?${params}`)
-            .then(response => {
-                console.log("Filtered plans:", response.data);
-                // Handle displaying the filtered plans here
-                resetForm(); // Reset form only after successful submission
-            }).catch(error => {
-                console.log("Error fetching filtered plans:", error.response?.data || error.message);
-                // Handle displaying an error message here
-            });
+        // If children are included, add numberOfChildren to queryParams
+        if (formData.includeChildren) {
+            queryParams.numberOfChildren = formData.numberOfChildren;
+        }
+
+        // Prepare the query string
+        const queryString = new URLSearchParams(queryParams).toString();
+
+        try {
+            const response = await axios.get(`http://localhost:3001/api/plans?${queryString}`);
+            console.log("Filtered Plans:", response.data);
+            // Handle displaying the filtered plans here
+            resetForm(); // Reset form only after successful submission
+        } catch (error) {
+            console.error("Error fetching filtered plans:", error.response?.data || error.message);
+            // Handle displaying an error message here
+        }
     };
 
     

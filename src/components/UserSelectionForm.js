@@ -79,6 +79,24 @@ const UserSelectionForm = () => {
                 errors.numberOfChildren = 'Number of children must be between 1 and 5.';
                 isValid = false;
             }
+
+            // Ensure principal age and inpatient limit are provided for dependent fields
+            if (formData.numberOfChildren && (!formData.age || !formData.inpatientLimit)) {
+                errors.numberOfChildren = 'Including children requires both principal age and inpatient limit to be specified.'
+                isValid = false;
+            }
+        }
+
+        // Validate maternity cover dependencies
+        if (formData.additionalCovers.maternity && (!formData.age || !formData.inpatientLimit)) {
+            errors.maternity = 'Maternity cover requires both principal age and inpatient limit to be specified.'
+            isValid = false;
+        }
+
+        // Validate dental cover dependencies
+        if (formData.additionalCovers.dental && (!formData.age || !formData.inpatientLimit || !formData.outpatientLimit)) {
+            errors.dental = 'Dental cover requires inpatient limit, principal age, and outpatient limit to be specified.';
+            isValid = false;
         }
 
         setErrorMessages(errors);
@@ -115,34 +133,55 @@ const UserSelectionForm = () => {
             return; // Stop form submission if validation fails
         }
 
-        // Constructing query parameters
-        let queryParams = {
-            age: formData.age,
-            inpatientLimit: formData.inpatientLimit,
-            // Convert additionalCovers to individual boolean query parameters
-            maternity: formData.additionalCovers.maternity,
-            dental: formData.additionalCovers.dental,
-            optical: formData.additionalCovers.optical,
-        };
+        // Constructing query parameters based on form data
+        let queryParams = new URLSearchParams();
+        queryParams.append("age", formData.age);
+        queryParams.append("inpatientLimit", formData.inpatientLimit);
+
+        // Add spouse age if spouse is included and valid
+        if (formData.includeSpouse && formData.spouseAge) {
+            queryParams.append("spouseAge", formData.spouseAge);
+        }
+
+        // Add number of kids if children are included and valid
+        if (formData.includeChildren && formData.numberOfChildren) {
+            queryParams.append("numberOfKids", formData.numberOfChildren);
+        }
+
+        // Add additional covers
+        if (formData.additionalCovers.maternity) queryParams.append("maternity", 'true');
+        if (formData.additionalCovers.dental) queryParams.append("dental", 'true');
+        if (formData.additionalCovers.dental) queryParams.append("optical", 'true');
+
+
+        // let queryParams = {
+        //     age: formData.age,
+        //     inpatientLimit: formData.inpatientLimit,
+        //     // Convert additionalCovers to individual boolean query parameters
+        //     maternity: formData.additionalCovers.maternity,
+        //     dental: formData.additionalCovers.dental,
+        //     optical: formData.additionalCovers.optical,
+        // };
 
         // If spouse is included, add spouseAge to queryParams
-        if (formData.includeSpouse) {
-            queryParams.spouseAge = formData.spouseAge;
-        }
+        // if (formData.includeSpouse) {
+        //     queryParams.spouseAge = formData.spouseAge;
+        // }
 
-        // If children are included, add numberOfChildren to queryParams
-        if (formData.includeChildren) {
-            queryParams.numberOfChildren = formData.numberOfChildren;
-        }
+        // // If children are included, add numberOfChildren to queryParams
+        // if (formData.includeChildren) {
+        //     queryParams.numberOfChildren = formData.numberOfChildren;
+        // }
 
         // Prepare the query string
-        const queryString = new URLSearchParams(queryParams).toString();
+        // const queryString = new URLSearchParams(queryParams).toString();
 
+        // Make the API call
         try {
-            const response = await axios.get(`http://localhost:3001/api/plans?${queryString}`);
+            const response = await axios.get(`http://localhost:3001/api/plans?${queryParams}`);
             console.log("Filtered Plans:", response.data);
-            // Handle displaying the filtered plans here
             resetForm(); // Reset form only after successful submission
+            // Handle displaying the filtered plans here
         } catch (error) {
             console.error("Error fetching filtered plans:", error.response?.data || error.message);
             // Handle displaying an error message here

@@ -134,9 +134,12 @@ const UserSelectionForm = () => {
         }
 
         // Constructing query parameters based on form data
-        let queryParams = new URLSearchParams();
-        queryParams.append("age", formData.age);
-        queryParams.append("inpatientLimit", formData.inpatientLimit);
+        let queryParams = new URLSearchParams({
+        principalAge: formData.age,
+        inpatientLimit: formData.inpatientLimit,
+        });
+        // queryParams.append("principalAge", formData.age);
+        // queryParams.append("inpatientLimit", formData.inpatientLimit);
 
         // Add spouse age if spouse is included and valid
         if (formData.includeSpouse && formData.spouseAge) {

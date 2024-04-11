@@ -10,9 +10,9 @@ const UserSelectionForm = () => {
         includeChildren: false,
         numberOfChildren: '',
         additionalCovers: {
-            maternity: false,
-            dental: false,
-            optical: false,
+            maternity: 'No',
+            dental: 'No',
+            optical: 'No', // Changes based on dental
         },
     });
     const [errorMessages, setErrorMessages] = useState({});
@@ -21,16 +21,17 @@ const UserSelectionForm = () => {
     // Helper to handle changes in form inputs
     const handleChange = (e) => {
         const {name, value, type, checked} = e.target;
-        // Handling checkboxes separately
-        if (type === 'checkbox') {
-            if (name === 'includeSpouse' || name === 'includeChildren') {
-                setFormData({...formData, [name]: checked});
-            } else {
-                setFormData({
-                    ...formData,
-                    additionalCovers: {...formData.additionalCovers, [name]:checked},
-                });
+
+        if (type === 'checkbox' && (name === 'includeSpouse' || name === 'includeChildren')) {
+            setFormData({...formData, [name]: checked});
+        } else if (name in formData.additionalCovers) {
+            const updatedCovers = {...formData.additionalCovers, [name]: value};
+            if (name === 'dental' && value === 'Yes') {
+                updatedCovers.optical = 'Yes'; // Optical is linked with Dental
+            } else if (name === 'dental' && value === 'No') {
+                updatedCovers.optical = 'No'; // Reset Optical is Dental is 'No'
             }
+            setFormData({...formData, additionalCovers: updatedCovers});
         } else {
             setFormData({...formData, [name]: value});
         }
@@ -133,40 +134,27 @@ const UserSelectionForm = () => {
             return; // Stop form submission if validation fails
         }
 
-        // Constructing query parameters based on form data
+        // Constructing query parameters
         let queryParams = new URLSearchParams({
-        principalAge: formData.age,
-        inpatientLimit: formData.inpatientLimit,
+            principalAge: formData.age,
+            inpatientLimit: formData.inpatientLimit,
+            ...(formData.includeSpouse && {spouseAge: formData.spouseAge}),
+            ...(formData.includeChildren && {numberOfKids: formData.numberOfChildren }),
+            ...(formData.additionalCovers.maternity === 'Yes' && {maternity: 'true'}),
+            ...(formData.additionalCovers.dental === 'Yes' && {dental: 'true', optical: 'true'}), // Include optical with dental
+            
         });
-        // queryParams.append("principalAge", formData.age);
-        // queryParams.append("inpatientLimit", formData.inpatientLimit);
-
-        // Add spouse age if spouse is included and valid
-        if (formData.includeSpouse && formData.spouseAge) {
-            queryParams.append("spouseAge", formData.spouseAge);
-        }
-
-        // Add number of kids if children are included and valid
-        if (formData.includeChildren && formData.numberOfChildren) {
-            queryParams.append("numberOfKids", formData.numberOfChildren);
-        }
-
-        // Add additional covers
-        if (formData.additionalCovers.maternity) queryParams.append("maternity", 'true');
-        if (formData.additionalCovers.dental) queryParams.append("dental", 'true');
-        if (formData.additionalCovers.dental) queryParams.append("optical", 'true');
 
 
-        // Make the API call
-        try {
-            const response = await axios.get(`http://localhost:3001/api/plans?${queryParams}`);
-            console.log("Filtered Plans:", response.data);
-            resetForm(); // Reset form only after successful submission
-            // Handle displaying the filtered plans here
-        } catch (error) {
-            console.error("Error fetching filtered plans:", error.response?.data || error.message);
-            // Handle displaying an error message here
-        }
+        axios.get(`http://localhost:3001/api/plans?${queryParams}`)
+            .then(response => {
+                console.log("Filtered plans:", response.data);
+                // Handle displaying the filtered plans here
+                resetForm(); // Reset form only after successful submission
+            }).catch(error => {
+                console.log("Error fetching filtered plans:", error.response?.data || error.message);
+                // Handle displaying an error message here
+            });
     };
 
     
@@ -253,8 +241,8 @@ const UserSelectionForm = () => {
                             value={formData.numberOfChildren}
                             onChange={handleChange}
                             required // Ensures field must be filled out
-                            min='1' // Ensures age cannot be below 18
-                            max='5' // Ensures age cannot be above 79
+                            min='1' // Ensures no.of kids cannot be below 1
+                            max='5' // Ensures no. of kids cannot be above 5
                         />
                         {errorMessages.numberOfChildren && <div>{errorMessages.numberOfChildren}</div>}
                     </>
@@ -264,35 +252,31 @@ const UserSelectionForm = () => {
             {/* Additional Covers */}
             <div>
                 <label>Maternity Cover:</label>
-                <input
-                    type='checkbox'
-                    name='maternity'
-                    checked={formData.additionalCovers.maternity}
-                    onChange={handleChange}
-                />
+                <select name='maternity' value={formData.additionalCovers.maternity} onChange={handleChange} required>
+                    <option value='No'>No</option>
+                    <option value='Yes'>Yes</option>
+                </select>
             </div>
             <div>
                 <label>Dental Cover:</label>
-                <input
-                    type='checkbox'
-                    name='dental'
-                    checked={formData.additionalCovers.dental}
-                    onChange={handleChange}
-                />
+                <select name='dental' value={formData.additionalCovers.dental} onChange={handleChange} required>
+                    <option value='No'>No</option>
+                    <option value='Yes'>Yes</option> 
+                </select>
             </div>
+
+            {/* Optical Cover (linked to Dental & NOT editable) */}
             <div>
                 <label>Optical Cover:</label>
-                <input
-                    type='checkbox'
-                    name='optical'
-                    checked={formData.additionalCovers.optical}
-                    onChange={handleChange}
-                />
+                <select name='optical' value={formData.additionalCovers.optical} onChange={handleChange} disabled>
+                    <option value='No'>No</option>
+                    <option value='Yes'>Yes</option> 
+                </select>
             </div>
 
 
             {/* Submit button */}
-            <button type='submit'>Submit</button>
+            <button type='submit'>Submit Details</button>
         </form>
     )
 

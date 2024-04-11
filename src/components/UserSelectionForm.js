@@ -154,28 +154,6 @@ const UserSelectionForm = () => {
         if (formData.additionalCovers.dental) queryParams.append("optical", 'true');
 
 
-        // let queryParams = {
-        //     age: formData.age,
-        //     inpatientLimit: formData.inpatientLimit,
-        //     // Convert additionalCovers to individual boolean query parameters
-        //     maternity: formData.additionalCovers.maternity,
-        //     dental: formData.additionalCovers.dental,
-        //     optical: formData.additionalCovers.optical,
-        // };
-
-        // If spouse is included, add spouseAge to queryParams
-        // if (formData.includeSpouse) {
-        //     queryParams.spouseAge = formData.spouseAge;
-        // }
-
-        // // If children are included, add numberOfChildren to queryParams
-        // if (formData.includeChildren) {
-        //     queryParams.numberOfChildren = formData.numberOfChildren;
-        // }
-
-        // Prepare the query string
-        // const queryString = new URLSearchParams(queryParams).toString();
-
         // Make the API call
         try {
             const response = await axios.get(`http://localhost:3001/api/plans?${queryParams}`);
@@ -196,12 +174,15 @@ const UserSelectionForm = () => {
             {/* Dynamically generate form fields based on state */}
             {/* Principal's Age */}
             <div>
-                <label>Age of Principal:</label>
+                <label>Principal Age:</label>
                 <input
                     type='number'
                     name='age'
                     value={formData.age}
                     onChange={handleChange}
+                    required // Ensures field must be filled out
+                    min='18' // Ensures age cannot be below 18
+                    max='79' // Ensures age cannot be above 79
                 />
                 {errorMessages.age && <div>{errorMessages.age}</div>}
             </div>
@@ -209,7 +190,7 @@ const UserSelectionForm = () => {
             {/* Inpatient Care Limit */}
             <div>
                 <label>Inpatient Care Limit:</label>
-                <select name='inpatientLimit' value={formData.inpatientLimit} onChange={handleChange}>
+                <select name='inpatientLimit' value={formData.inpatientLimit} onChange={handleChange} required>
                     <option value="">Select Inpatient Care Limit</option>
                     <option value="100000">Kshs 100,000</option>
                     <option value="250000">Kshs 250,000</option>
@@ -242,6 +223,9 @@ const UserSelectionForm = () => {
                             name='spouseAge'
                             value={formData.spouseAge}
                             onChange={handleChange}
+                            required // Ensures field must be filled out
+                            min='18' // Ensures age cannot be below 18
+                            max='79' // Ensures age cannot be above 79
                         />
                         {errorMessages.spouseAge && <div>{errorMessages.spouseAge}</div>}
                     </>
@@ -265,6 +249,9 @@ const UserSelectionForm = () => {
                             name='numberOfChildren'
                             value={formData.numberOfChildren}
                             onChange={handleChange}
+                            required // Ensures field must be filled out
+                            min='1' // Ensures age cannot be below 18
+                            max='5' // Ensures age cannot be above 79
                         />
                         {errorMessages.numberOfChildren && <div>{errorMessages.numberOfChildren}</div>}
                     </>

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import axios from 'axios';
 
 const UserSelectionForm = () => {
@@ -20,6 +20,24 @@ const UserSelectionForm = () => {
     const [loadingOutpatientLimits, setLoadingOutpatientLimits] = useState(false); // Loading state
     const [errorMessages, setErrorMessages] = useState({});
 
+    // Fetch outpatient limits based on inpatient limit
+    useEffect(() => {
+        const fetchOutpatientLimits = async () => {
+            if (formData.inpatientLimit) {
+                setLoadingOutpatientLimits(true);
+                try {
+                    const response = await axios.get(`http://localhost:3001/api/outpatient-limits?inpatientLimit=${formData.inpatientLimit}`);
+                    setOutpatientLimits(response.data); // Assuming the response data is the array of limits
+                } catch (error) {
+                    console.error('Error fetching outpatient limits:', error);
+                }
+                setLoadingOutpatientLimits(false);
+            }
+        };
+
+        fetchOutpatientLimits();
+    }, [formData.inpatientLimit]);
+
 
     // Helper to handle changes in form inputs
     const handleChange = (e) => {
@@ -30,9 +48,9 @@ const UserSelectionForm = () => {
         } else if (name in formData.additionalCovers) {
             const updatedCovers = {...formData.additionalCovers, [name]: value};
             if (name === 'dental' && value === 'Yes') {
-                updatedCovers.optical = 'Yes'; // Optical is linked with Dental
+                updatedCovers.optical = 'Yes'; // Link optical with Dental
             } else if (name === 'dental' && value === 'No') {
-                updatedCovers.optical = 'No'; // Reset Optical is Dental is 'No'
+                updatedCovers.optical = 'No'; // Unlink Optical if Dental is 'No'
             }
             setFormData({...formData, additionalCovers: updatedCovers});
         } else {
@@ -277,11 +295,11 @@ const UserSelectionForm = () => {
                 </select>
             </div>
 
-                        {/* Include dynamic select for outpatient limits if dental is 'Yes'*/}
-                        {formData.additionalCovers.dental === 'Yes' && (
+            {/* Include dynamic select for outpatient limits if dental is 'Yes'*/}
+            {formData.additionalCovers.dental === 'Yes' && (
                 <div>
                     <label>Outpatient Limit:</label>
-                    <select name='outpatientLimit' value={formData.outpatientLimit} onChange={handleChange} disabled={loadingOutpatientLimits} required>
+                    <select name='outpatientLimit' value={formData.outpatientLimit} onChange={handleChange} disabled={!formData.inpatientLimit || loadingOutpatientLimits} required>
                         <option value="">Select Outpatient Limit</option>
                         {outpatientLimits.map((limit) => (
                             <option key={limit} value={limit}>{`Kshs ${limit}`}</option>

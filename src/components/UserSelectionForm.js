@@ -26,7 +26,7 @@ const UserSelectionForm = () => {
             if (formData.inpatientLimit) {
                 setLoadingOutpatientLimits(true);
                 try {
-                    const response = await axios.get(`http://localhost:3001/api/outpatient-limits?inpatientLimit=${formData.inpatientLimit}`);
+                    const response = await axios.get(`http://localhost:3001/api/plans/outpatient-limits/${formData.inpatientLimit}`);
                     setOutpatientLimits(response.data); // Assuming the response data is the array of limits
                 } catch (error) {
                     console.error('Error fetching outpatient limits:', error);

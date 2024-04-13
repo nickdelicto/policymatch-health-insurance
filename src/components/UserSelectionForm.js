@@ -55,6 +55,10 @@ const UserSelectionForm = () => {
             setFormData({...formData, additionalCovers: updatedCovers});
         } else {
             setFormData({...formData, [name]: value});
+            // Reset Dental and Optical when 'No Outpatient' is selected
+            if (name === 'outpatientLimit' && value === 'No Outpatient') {
+                setFormData({...formData, additionalCovers: {...formData.additionalCovers, dental: 'No', optical: 'No'}});
+            }
         }
     };
 
@@ -220,7 +224,7 @@ const UserSelectionForm = () => {
 
             {/* Include dynamic select for outpatient limits */}
             <div>
-                <label>Outpatient Limit:</label>
+                <label>Outpatient Care Limit:</label>
                 <select name='outpatientLimit' value={formData.outpatientLimit} onChange={handleChange} required>
                     {outpatientLimits.map(limit => (
                         <option key={limit} value={limit === 'No Outpatient' ? '' : limit}>{limit}</option>
@@ -289,23 +293,29 @@ const UserSelectionForm = () => {
                     <option value='Yes'>Yes</option>
                 </select>
             </div>
-            <div>
-                <label>Dental Cover:</label>
-                <select name='dental' value={formData.additionalCovers.dental} onChange={handleChange} required>
-                    <option value='No'>No</option>
-                    <option value='Yes'>Yes</option> 
-                </select>
-            </div>
 
-            {/* Optical Cover (linked to Dental & NOT editable) */}
-            <div>
-                <label>Optical Cover:</label>
-                <select name='optical' value={formData.additionalCovers.optical} onChange={handleChange} disabled>
-                    <option value='No'>No</option>
-                    <option value='Yes'>Yes</option> 
-                </select>
-            </div>
+            {/* Conditional rendering for Dental/Optical based on Outpatient selection */}
+            {formData.outpatientLimit != '' && formData.outpatientLimit !== 'No Outpatient' && (
+                <>
+                    <div>
+                        <label>Dental Cover:</label>
+                        <select name='dental' value={formData.additionalCovers.dental} onChange={handleChange} required>
+                            <option value='No'>No</option>
+                            <option value='Yes'>Yes</option> 
+                        </select>
+                    </div>
 
+                    {/* Optical Cover (linked to Dental & NOT editable) */}
+                    <div>
+                        <label>Optical Cover:</label>
+                        <select name='optical' value={formData.additionalCovers.optical} onChange={handleChange} disabled>
+                            <option value='No'>No</option>
+                            <option value='Yes'>Yes</option> 
+                        </select>
+                    </div>
+                </>
+            )}
+                        
             {/* Submit button */}
             <button type='submit'>Submit Details</button>
         </form>

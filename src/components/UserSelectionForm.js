@@ -16,7 +16,7 @@ const UserSelectionForm = () => {
             optical: 'No', // Changes based on dental
         },
     });
-    const [outpatientLimits, setOutpatientLimits] = useState([]); // Store outpatient limits
+    const [outpatientLimits, setOutpatientLimits] = useState(['No Outpatient']); // Store outpatient limits
     const [loadingOutpatientLimits, setLoadingOutpatientLimits] = useState(false); // Loading state
     const [errorMessages, setErrorMessages] = useState({});
 
@@ -27,7 +27,7 @@ const UserSelectionForm = () => {
                 setLoadingOutpatientLimits(true);
                 try {
                     const response = await axios.get(`http://localhost:3001/api/plans/outpatient-limits/${formData.inpatientLimit}`);
-                    setOutpatientLimits(response.data); // Assuming the response data is the array of limits
+                    setOutpatientLimits(['No Outpatient', ...response.data.map(limit => `Kshs ${limit}`)]); // Assuming the response data is the array of limits
                 } catch (error) {
                     console.error('Error fetching outpatient limits:', error);
                 }
@@ -163,7 +163,7 @@ const UserSelectionForm = () => {
             ...(formData.includeChildren && {numberOfKids: formData.numberOfChildren }),
             ...(formData.additionalCovers.maternity === 'Yes' && {maternity: 'true'}),
             ...(formData.additionalCovers.dental === 'Yes' && {dental: 'true', optical: 'true'}), // Include optical with dental
-            
+            ...(formData.outpatientLimit && {outpatientLimit: formData.outpatientLimit}),
         });
 
 
@@ -217,6 +217,17 @@ const UserSelectionForm = () => {
                 </select>
                 {errorMessages.inpatientLimit && <div>{errorMessages.inpatientLimit}</div>}
             </div>
+
+            {/* Include dynamic select for outpatient limits */}
+            <div>
+                <label>Outpatient Limit:</label>
+                <select name='outpatientLimit' value={formData.outpatientLimit} onChange={handleChange} required>
+                    {outpatientLimits.map(limit => (
+                        <option key={limit} value={limit === 'No Outpatient' ? '' : limit}>{limit}</option>
+                    ))}
+                </select>
+            </div>
+
 
             {/* Include Spouse */}
             <div>
@@ -294,20 +305,6 @@ const UserSelectionForm = () => {
                     <option value='Yes'>Yes</option> 
                 </select>
             </div>
-
-            {/* Include dynamic select for outpatient limits if dental is 'Yes'*/}
-            {formData.additionalCovers.dental === 'Yes' && (
-                <div>
-                    <label>Outpatient Limit:</label>
-                    <select name='outpatientLimit' value={formData.outpatientLimit} onChange={handleChange} disabled={!formData.inpatientLimit || loadingOutpatientLimits} required>
-                        <option value="">Select Outpatient Limit</option>
-                        {outpatientLimits.map((limit) => (
-                            <option key={limit} value={limit}>{`Kshs ${limit}`}</option>
-                        ))}
-                    </select>
-                </div>
-            )}
-
 
             {/* Submit button */}
             <button type='submit'>Submit Details</button>

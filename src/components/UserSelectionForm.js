@@ -22,21 +22,21 @@ const UserSelectionForm = () => {
 
     // Fetch outpatient limits based on inpatient limit
     useEffect(() => {
-        const fetchOutpatientLimits = async () => {
-            if (formData.inpatientLimit) {
-                setLoadingOutpatientLimits(true);
-                try {
-                    const response = await axios.get(`http://localhost:3001/api/plans/outpatient-limits/${formData.inpatientLimit}`);
-                    setOutpatientLimits(['No Outpatient', ...response.data.map(limit => `Kshs ${limit}`)]); // Assuming the response data is the array of limits
-                } catch (error) {
+        if (formData.inpatientLimit) {
+            setLoadingOutpatientLimits(true);
+            axios.get(`http://localhost:3001/api/plans/outpatient-limits/${formData.inpatientLimit}`)
+                .then(response => {
+                    setOutpatientLimits(['No Outpatient', ...response.data]); // Ensure 'No Outpatient' is included
+                })
+                .catch(error => {
                     console.error('Error fetching outpatient limits:', error);
-                }
-                setLoadingOutpatientLimits(false);
-            }
-        };
-
-        fetchOutpatientLimits();
-    }, [formData.inpatientLimit]);
+                    setOutpatientLimits(['No Outpatient']); // Reset to default if there's an error
+                })
+                .finally(() => setLoadingOutpatientLimits(false));
+        } else {
+            setOutpatientLimits(['No Outpatient']); // Reset to default if no inpatient limit is selected
+        }
+    }, [formData.inpatientLimit]); // Dependency on inpatient limit
 
 
     // Helper to handle changes in form inputs
@@ -289,19 +289,19 @@ const UserSelectionForm = () => {
             <div>
                 <label>Maternity Cover:</label>
                 <select name='maternity' value={formData.additionalCovers.maternity} onChange={handleChange} required>
-                    <option value='No'>No</option>
-                    <option value='Yes'>Yes</option>
+                    <option value='no'>No</option>
+                    <option value='yes'>Yes</option>
                 </select>
             </div>
 
             {/* Conditional rendering for Dental/Optical based on Outpatient selection */}
-            {formData.outpatientLimit != '' && formData.outpatientLimit !== 'No Outpatient' && (
+            {formData.outpatientLimit !== '' && formData.outpatientLimit !== 'No Outpatient' && (
                 <>
                     <div>
                         <label>Dental Cover:</label>
                         <select name='dental' value={formData.additionalCovers.dental} onChange={handleChange} required>
-                            <option value='No'>No</option>
-                            <option value='Yes'>Yes</option> 
+                            <option value='no'>No</option>
+                            <option value='yes'>Yes</option> 
                         </select>
                     </div>
 
@@ -309,8 +309,8 @@ const UserSelectionForm = () => {
                     <div>
                         <label>Optical Cover:</label>
                         <select name='optical' value={formData.additionalCovers.optical} onChange={handleChange} disabled>
-                            <option value='No'>No</option>
-                            <option value='Yes'>Yes</option> 
+                            <option value='no'>No</option>
+                            <option value='yes'>Yes</option> 
                         </select>
                     </div>
                 </>
